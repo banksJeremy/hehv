@@ -1,6 +1,6 @@
 (ns hehvolution.gui
     (:require [hehvolution.core :as core])
-    (:import (javax.swing JFrame)
+    (:import (javax.swing JFrame JPanel)
              (java.awt Color Graphics2D Dimension)
              (java.awt.geom RoundRectangle2D$Double)))
 
@@ -11,13 +11,16 @@
   ([x y w h arcw arch] (RoundRectangle2D$Double. x y w h arcw arch)))
 
 (defn open-window []
-  (let [window (proxy [JFrame] ["Hello World"]
-         (paint [g] (let [g2d (cast Graphics2D g)]
-           (.setColor g2d Color/black)
-           (.fill g2d (rect 5 5 5))
-           (.setColor g2d Color/red)
-           (.fill g2d (rect 5 5 5)))))]
-       (.setPreferredSize window (Dimension. 300 300))
+  (let [window (JFrame.)
+        panel (proxy [JPanel] []
+          (paintComponent [g] (let [g2d (cast Graphics2D g)]
+            (proxy-super paintComponent g)
+            (.setColor g2d Color/red)
+            (.fill g2d (rect 5 5 50 50 10))
+            (.setColor g2d Color/black)
+            (.draw g2d (rect 5 5 50 50 10)))))]
+       (.setPreferredSize panel (Dimension. 300 300))
+       (.add window panel)
        (.pack window)
        (.setDefaultCloseOperation window JFrame/EXIT_ON_CLOSE)               
        (.show window)
