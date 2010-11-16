@@ -1,0 +1,8 @@
+Author: Jeremy Banks <jeremy@jeremybanks.ca>
+Source: https://gist.github.com/f7a8cf31da2dc008bae3
+
+Need something to make in clojure to get a clue how to use it.
+
+Hmm. I think I'll do some sort of simulation with evolution. Maybe have little
+creatures running around an environment, gathering resources, reproducing
+(asexually) and maybe fighting. Have a GUI, but work without it.
