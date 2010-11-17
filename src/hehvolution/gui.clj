@@ -12,17 +12,28 @@
   ([x y s] (Rectangle2D$Double. x y s s))
   ([x y w h] (Rectangle2D$Double. x y w h))
   ([x y w h arc] (RoundRectangle2D$Double. x y w h arc arc))
-  ([x y w h arcw arch] (RoundRectangle2D$Double. x y w h arcw arch)))
+  ([x y w h arc-w arc-h] (RoundRectangle2D$Double. x y w h arc-w arc-h)))
+
+(defn paint-scaled-rect
+  "Paints a scaled [rounded] rectangle in a graphics context."
+  [g2d scale fill-color border-color border-width & rect-args]
+    (let [rect-args (map #(* scale %) rect-args)]
+      (.setPaint g2d fill-color)
+      (.fill g2d (apply rect rect-args))
+      (.setPaint g2d border-color)
+      (.setStroke g2d (BasicStroke. (* scale border-width)))
+      (.draw g2d (apply rect rect-args))))
 
 (defn paint-guy
   "Paints a guy."
-  [guy g2d scale]
-    (.setPaint g2d Color/red)
-    (.fill g2d (rect (* scale (guy :x)) (* scale (guy :y)) 8 8 3))
-    (.setPaint g2d Color/black)
-    (.draw g2d (rect (* scale (guy :x)) (* scale (guy :y)) 8 8 3)))
+  [g2d scale guy]
+    (paint-scaled-rect g2d scale Color/blue Color/black 2
+                       (guy :x) (guy :y) 6 6 1))
 
-(defn paint-sim [sim scale])
+(defn paint-sim
+  "Paints a sim."
+  [g2d scale sim]
+    (doseq [guy (@(sim :state) :guys)] (paint-guy g2d scale guy)))
 
 ; TODO: use agents and other idiomatic niceness
 (defn run-simulation
@@ -33,7 +44,7 @@
         (Thread/sleep (* 1000 (/ 1 hertz)))
         (core/tick-sim sim))))))
 
-(defn periodically-repaint
+(defn frequently-repaint
   "Yeah."
   [thing hertz]
     (.start (Thread. (fn []
@@ -43,20 +54,19 @@
 
 (defn open-window
   "Yoah."
-  ([] (open-window (core/simulation) 1))
+  ([] (open-window (core/simulation) 5))
   ([sim scale]
     (let [window (JFrame.)
           panel (proxy [JPanel] []
             (paintComponent [g] (let [g2d (cast Graphics2D g)]
               (proxy-super paintComponent g)
-              (.setStroke g2d (BasicStroke. 2))
-              (doseq [guy (@(sim :state) :guys)] (paint-guy guy g2d scale)))))]
+              (paint-sim g2d scale sim))))]
        (.setPreferredSize panel (Dimension. (* (sim :width) scale)
                                             (* (sim :height) scale)))
        (.add window panel)
        (.pack window)
-       (.setDefaultCloseOperation window JFrame/EXIT_ON_CLOSE)               
+       ; (.setDefaultCloseOperation window JFrame/EXIT_ON_CLOSE)               
        (.show window)
-       (run-simulation sim 10)
-       (periodically-repaint panel 10)
+       (run-simulation sim 30)
+       (frequently-repaint panel 30)
        window)))
