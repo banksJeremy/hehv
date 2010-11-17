@@ -56,8 +56,9 @@
   [other self]
   (if (or (identical? other self) (<= (other :life) 0))
       (point 0 0)
-      (point-scale (point-sub (self :loc) (other :loc))
-                   ((self :geneotype) :avoidance))))
+      (let [delta (point-sub (self :loc) (other :loc))]
+        (point-scale delta (/ ((self :geneotype) :avoidance)
+                              (point-mag delta))))))
 
 (defn guy-direction
   "Returns the direction a guy would like to move in, given a state."
