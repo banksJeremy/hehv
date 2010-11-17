@@ -2,7 +2,8 @@
 
 (def mutation-stdev 0.1)
 
-(def genes [:fear :hunger :life-to-repo])
+(def genes [:fear :avoidance :life-to-repo])
+(def guy-speed 0.1)
 
 (defn geneotype
   "Generates a genotype, uniformly random or from mutating an existing one."
@@ -11,13 +12,62 @@
   ([parent]
     parent)) ; TODO
 
+(defn point
+  [x y]
+    {:x x :y y})
+
+(defn point-sum
+  [a b]
+    (point (+ (a :x) (b :x)) (+ (a :y) (b :y))))
+
+(defn point-sub
+  [a b]
+    (point (- (a :x) (b :x)) (- (a :y) (b :y))))
+
+(defn point-scale
+  [p scale]
+    (point (* scale (p :x)) (* scale (p :y))))
+
+(defn point-mag
+  [p]
+    (Math/pow (+ (Math/pow (p :x) 2) (Math/pow (p :y) 2)) 0.5))
+
+(defn point-direction
+  [p]
+    (point-scale p (/ 1 (point-mag p))))
+
 (defn guy
   "Creates a new guy."
-  [sim-width sim-height]
-    {:x (* (rand) sim-width)
-     :y (* (rand) sim-height)
+  ([]
+    (guy 1.0 1.0))
+  ([sim-width sim-height]
+    {:loc (point (* (rand) sim-width) (* (rand) sim-height))
      :life 1.0
-     :geneotype (geneotype)})
+     :geneotype (geneotype)
+     :type :guy}))
+
+(defmulti guy-influence-on
+  "How much a guy is influenced by something."
+  :type)
+
+(defmethod guy-influence-on :guy
+  [other self]
+  (if (or (identical? other self) (<= (other :life) 0))
+      (point 0 0)
+      (point-scale (point-sub (self :loc) (other :loc)
+                   ((self :genotype) :avoidance)))))
+
+(defn guy-direction
+  "Returns the direction a guy would like to move in, given a state."
+  [self state]
+    (point-direction
+      (reduce point-sum (point 0 0) 
+              (map #(guy-influence-on % self) (state :guys)))))
+
+(defn guy-velocity
+  "Returns the velocity a guy would move at, given a state."
+  [self state]
+    (point-scale (guy-direction self state) guy-speed))
 
 (defn simulation
   "Yeah!"
@@ -33,13 +83,17 @@
 (defn advanced-state
   "Returns what state becomes after a generation."
   [state]
-    (assoc state :guys
-      (map (fn [guy] (assoc guy :x (+ (* 2 (rand)) (guy :x) -1)
-                                :y (+ (* 2 (rand)) (guy :y) -1)
-                                :life (- (guy :life) (* 0.01 (rand)))))
-           (state :guys))))
+    (assoc state
+      :guys (map #(assoc % :loc (point-sum (% :loc) (guy-velocity % state))) 
+                 (state :guys))))
 
 (defn tick-sim
   "Tick."
   [sim]
   (dosync (alter (sim :state) advanced-state)))
+
+(defn GOGOGO []
+  "do something to see if it blows up"
+  (tick-sim (simulation)))
+
+

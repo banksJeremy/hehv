@@ -28,7 +28,8 @@
 (defn guy-fill
   "Determines the fill color for a guy, based on his geneotype."
   [guy]
-    (apply #(Color. %1 %2 %3) (for [gene core/genes] (Float. ((guy :geneotype) gene)))))
+    (apply #(Color. %1 %2 %3) ; can't apply to "Color." =/
+           (for [gene core/genes] (Float. ((guy :geneotype) gene)))))
 
 (defn guy-border
   "Determines the border color for a guy, based on his life."
