@@ -2,7 +2,7 @@
 
 (def mutation-stdev 0.1)
 
-(def genes [:hunger :avoidance :life-to-repo])
+(def genes [:unhunger :avoidance :life-to-repo])
 (def guy-speed 0.1)
 
 (defn geneotype
@@ -57,16 +57,14 @@
   (if (or (identical? other self) (<= (other :life) 0))
       (point 0 0)
       (let [delta (point-sub (self :loc) (other :loc))]
-        (point-scale delta (/ ((self :geneotype) :avoidance)
-                              (point-mag delta))))))
+        (point-scale delta (/ (Math/pow (point-mag delta) (+ 1 (self :avoidance))))))))
 
 (defmethod influence-on-guy :resource
   [other self]
   (if (<= (other :remaining) 0)
       (point 0 0)
       (let [delta (point-sub (other :loc) (self :loc))]
-        (point-scale delta (/ ((self :geneotype) :avoidance)
-                              (point-mag delta))))))
+        (point-scale delta (/ (Math/pow (point-mag delta) (+ 1 (self :unhunger))))))))
 
 (defn guy-direction
   "Returns the direction a guy would like to move in, given a state."
