@@ -3,6 +3,7 @@
     (:import (java.lang Thread)
              (javax.swing JFrame JPanel)
              (java.awt Color Graphics2D Dimension BasicStroke)
+             (java.awt.image BufferedImage)
              (java.awt.geom RoundRectangle2D$Double Rectangle2D$Double)))
 
 (defn rect
@@ -58,9 +59,14 @@
   ([sim scale]
     (let [window (JFrame.)
           panel (proxy [JPanel] []
-            (paintComponent [g] (let [g2d (cast Graphics2D g)]
+            (paintComponent [g]
               (proxy-super paintComponent g)
-              (paint-sim g2d scale sim))))]
+              (let [image (BufferedImage. (* (sim :width) scale)
+                                          (* (sim :height) scale)
+                                          BufferedImage/TYPE_INT_ARGB)
+                    g2d (.createGraphics image)]
+                   (paint-sim g2d scale sim)
+                   (.drawImage g image 0 0 nil))))]
        (.setPreferredSize panel (Dimension. (* (sim :width) scale)
                                             (* (sim :height) scale)))
        (.add window panel)
