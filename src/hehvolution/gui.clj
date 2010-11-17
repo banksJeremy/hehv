@@ -41,7 +41,7 @@
   [g2d scale guy]
     (if (> (guy :life) 0)
         (paint-scaled-rect g2d scale (guy-fill guy) (guy-border guy) 1.5
-                           (guy :x) (guy :y) 6 6 1)))
+                           ((guy :loc) :x) ((guy :loc) :y) 6 6 1)))
 
 (defn paint-sim
   "Paints a sim."
