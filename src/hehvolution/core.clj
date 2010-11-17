@@ -48,15 +48,23 @@
      :geneotype (geneotype)
      :type :guy}))
 
-(defmulti guy-influence-on
+(defmulti influence-on-guy
   "How much a guy is influenced by something."
   :type)
 
-(defmethod guy-influence-on :guy
+(defmethod influence-on-guy :guy
   [other self]
   (if (or (identical? other self) (<= (other :life) 0))
       (point 0 0)
       (let [delta (point-sub (self :loc) (other :loc))]
+        (point-scale delta (/ ((self :geneotype) :avoidance)
+                              (point-mag delta))))))
+
+(defmethod influence-on-guy :resource
+  [other self]
+  (if (<= (other :remaining) 0)
+      (point 0 0)
+      (let [delta (point-sub (other :loc) (self :loc))]
         (point-scale delta (/ ((self :geneotype) :avoidance)
                               (point-mag delta))))))
 
@@ -65,19 +73,30 @@
   [self state]
     (point-direction
       (reduce point-sum (point 0 0) 
-              (map #(guy-influence-on % self) (state :guys)))))
+              (map #(influence-on-guy % self) (concat (state :guys) (state :resources))))))
 
 (defn guy-velocity
   "Returns the velocity a guy would move at, given a state."
   [self state]
     (point-scale (guy-direction self state) guy-speed))
 
+(defn resource
+  ([]
+    (resource 1.0 1.0))
+  ([sim-width sim-height]
+    {:loc (point (* (rand) sim-width) (* (rand) sim-height))
+     :remaining (+ 0.5 (rand))
+     :type :resource}))
+
+
 (defn simulation
   "Yeah!"
   ([]
-    (simulation 10 120 120))
-  ([n-guys width height]
-    (let [initial-state {:guys (for [_ (range n-guys)] (guy width height))}]
+    (simulation 10 20 120 120))
+  ([n-guys n-resources width height]
+    (let [initial-state {
+            :guys (for [_ (range n-guys)] (guy width height))
+            :resources (for [_ (range n-resources)] (resource width height))}]
       {:initial-state initial-state
        :state (ref initial-state)
        :width width
@@ -87,7 +106,8 @@
   "Returns what state becomes after a generation."
   [state]
     (assoc state
-      :guys (map #(assoc % :loc (point-sum (% :loc) (guy-velocity % state))) 
+      :guys (map #(assoc % :loc (point-sum (% :loc) (guy-velocity % state))
+                           :life (- (% :life) 0.001)) 
                  (state :guys))))
 
 (defn tick-sim

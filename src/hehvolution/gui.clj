@@ -43,10 +43,18 @@
         (paint-scaled-rect g2d scale (guy-fill guy) (guy-border guy) 1.5
                            ((guy :loc) :x) ((guy :loc) :y) 6 6 1)))
 
+(defn paint-resource
+  [g2d scale res]
+    (if (> (res :remaining) 0)
+        (paint-scaled-rect g2d scale Color/green Color/blue 0.5
+                           ((res :loc) :x) ((res :loc) :y) 3 3 0.5)))
+
 (defn paint-sim
   "Paints a sim."
   [g2d scale sim]
-    (doseq [guy (@(sim :state) :guys)] (paint-guy g2d scale guy)))
+    (let [state @(sim :state)]
+      (doseq [guy (state :guys)] (paint-guy g2d scale guy))
+      (doseq [res (state :resources)] (paint-resource g2d scale res))))
 
 ; TODO: use agents and other idiomatic niceness
 (defn run-simulation
