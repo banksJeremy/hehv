@@ -2,7 +2,7 @@
 
 (def mutation-stdev 0.1)
 
-(def genes [:fear :avoidance :life-to-repo])
+(def genes [:hunger :avoidance :life-to-repo])
 (def guy-speed 0.1)
 
 (defn geneotype
@@ -34,7 +34,9 @@
 
 (defn point-direction
   [p]
-    (point-scale p (/ 1 (point-mag p))))
+    (if (== (point-mag p) 0)
+        p
+        (point-scale p (/ 1 (point-mag p)))))
 
 (defn guy
   "Creates a new guy."
@@ -54,8 +56,8 @@
   [other self]
   (if (or (identical? other self) (<= (other :life) 0))
       (point 0 0)
-      (point-scale (point-sub (self :loc) (other :loc)
-                   ((self :genotype) :avoidance)))))
+      (point-scale (point-sub (self :loc) (other :loc))
+                   ((self :geneotype) :avoidance))))
 
 (defn guy-direction
   "Returns the direction a guy would like to move in, given a state."
