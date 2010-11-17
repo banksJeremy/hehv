@@ -1,14 +1,23 @@
 (ns hehvolution.core)
 
-(defmacro def-
-  "Defines a private "
-  [symbol value]
-  `(def ^{:private true} ~symbol ~value)); TODO: not ignore existing meta
+(def mutation-stdev 0.1)
+
+(def genes [:fear :hunger :life-to-repo])
+
+(defn geneotype
+  "Generates a genotype, uniformly random or from mutating an existing one."
+  ([]
+    (apply hash-map (flatten (for [gene genes] [gene (rand)]))))
+  ([parent]
+    parent)) ; TODO
 
 (defn guy
   "Creates a new guy."
   [sim-width sim-height]
-    {:x (* (rand) sim-width) :y (* (rand) sim-height)})
+    {:x (* (rand) sim-width)
+     :y (* (rand) sim-height)
+     :life 1.0
+     :geneotype (geneotype)})
 
 (defn simulation
   "Yeah!"
@@ -26,7 +35,8 @@
   [state]
     (assoc state :guys
       (map (fn [guy] (assoc guy :x (+ (* 2 (rand)) (guy :x) -1)
-                                :y (+ (* 2 (rand)) (guy :y) -1)))
+                                :y (+ (* 2 (rand)) (guy :y) -1)
+                                :life (- (guy :life) (* 0.01 (rand)))))
            (state :guys))))
 
 (defn tick-sim

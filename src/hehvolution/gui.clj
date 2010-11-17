@@ -1,6 +1,6 @@
 (ns hehvolution.gui
     (:require [hehvolution.core :as core])
-    (:import (java.lang Thread)
+    (:import (java.lang Thread Float)
              (javax.swing JFrame JPanel)
              (java.awt Color Graphics2D Dimension BasicStroke)
              (java.awt.image BufferedImage)
@@ -25,11 +25,22 @@
       (.setStroke g2d (BasicStroke. (* scale border-width)))
       (.draw g2d (apply rect rect-args))))
 
+(defn guy-fill
+  "Determines the fill color for a guy, based on his geneotype."
+  [guy]
+    (apply #(Color. %1 %2 %3) (for [gene core/genes] (Float. ((guy :geneotype) gene)))))
+
+(defn guy-border
+  "Determines the border color for a guy, based on his life."
+  [guy]
+    (Color/getHSBColor 0 0 (guy :life)))
+
 (defn paint-guy
   "Paints a guy."
   [g2d scale guy]
-    (paint-scaled-rect g2d scale Color/blue Color/black 2
-                       (guy :x) (guy :y) 6 6 1))
+    (if (> (guy :life) 0)
+        (paint-scaled-rect g2d scale (guy-fill guy) (guy-border guy) 1.5
+                           (guy :x) (guy :y) 6 6 1)))
 
 (defn paint-sim
   "Paints a sim."
