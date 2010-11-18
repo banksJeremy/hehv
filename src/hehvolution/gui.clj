@@ -92,12 +92,13 @@
                                             (* (sim :height) scale)))
        (.add window panel)
        (let [cW (KeyStroke/getKeyStroke KeyEvent/VK_W (.getMenuShortcutKeyMask (Toolkit/getDefaultToolkit)))]
-         (.put (.getInputMap panel JPanel/WHEN_IN_FOCUSED_WINDOW) cW "close-window")
          (.put (.getActionMap panel) "close-window"
                (proxy [AbstractAction] ["Close Window"]
                  (actionPerformed [e]
-                   (.setVisible this false)
-                   (.dispose this)))))
+                   ; todo: actually stop the background threads
+                   (.setVisible window false)
+                   (.dispose window))))
+         (.put (.getInputMap panel JPanel/WHEN_IN_FOCUSED_WINDOW) cW "close-window"))
        (.pack window)
        ; (.setDefaultCloseOperation window JFrame/EXIT_ON_CLOSE)               
        (.show window)
