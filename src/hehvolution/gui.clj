@@ -1,8 +1,9 @@
 (ns hehvolution.gui
     (:require [hehvolution.core :as core])
     (:import (java.lang Thread Float)
-             (javax.swing JFrame JPanel)
-             (java.awt Color Graphics2D Dimension BasicStroke)
+             (javax.swing JFrame JPanel KeyStroke AbstractAction)
+             (java.awt Color Graphics2D Dimension BasicStroke Toolkit)
+             (java.awt.event ActionEvent KeyEvent)
              (java.awt.image BufferedImage)
              (java.awt.geom RoundRectangle2D$Double Rectangle2D$Double)))
 
@@ -77,8 +78,7 @@
   "Yoah."
   ([] (open-window (core/simulation) 5))
   ([sim scale]
-    (let [window (JFrame.)
-          panel (proxy [JPanel] []
+    (let [panel (proxy [JPanel] []
             (paintComponent [g]
               (proxy-super paintComponent g)
               (let [image (BufferedImage. (* (sim :width) scale)
@@ -86,10 +86,18 @@
                                           BufferedImage/TYPE_INT_ARGB)
                     g2d (.createGraphics image)]
                    (paint-sim g2d scale sim)
-                   (.drawImage g image 0 0 nil))))]
+                   (.drawImage g image 0 0 nil))))
+          window (JFrame.)]
        (.setPreferredSize panel (Dimension. (* (sim :width) scale)
                                             (* (sim :height) scale)))
        (.add window panel)
+       (let [cW (KeyStroke/getKeyStroke KeyEvent/VK_W (.getMenuShortcutKeyMask (Toolkit/getDefaultToolkit)))]
+         (.put (.getInputMap panel JPanel/WHEN_IN_FOCUSED_WINDOW) cW "close-window")
+         (.put (.getActionMap panel) "close-window"
+               (proxy [AbstractAction] ["Close Window"]
+                 (actionPerformed [e]
+                   (.setVisible this false)
+                   (.dispose this)))))
        (.pack window)
        ; (.setDefaultCloseOperation window JFrame/EXIT_ON_CLOSE)               
        (.show window)
