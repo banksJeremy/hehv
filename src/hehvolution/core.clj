@@ -1,12 +1,13 @@
-(ns hehvolution.core)
+(ns hehvolution.core
+    "Simulation!!!")
 
 (def mutation-stdev 0.1)
 
 (def genes [:unhunger :avoidance :life-to-repo])
 (def guy-speed 0.1)
 
-(defn geneotype
-  "Generates a genotype, uniformly random or from mutating an existing one."
+(defn geneome
+  "Generates a geneome, uniformly random or from mutating an existing one."
   ([]
     (apply hash-map (flatten (for [gene genes] [gene (rand)]))))
   ([parent]
@@ -45,7 +46,8 @@
   ([sim-width sim-height]
     {:loc (point (* (rand) sim-width) (* (rand) sim-height))
      :life 1.0
-     :geneotype (geneotype)
+     :geneome (geneome)
+     :radius 6
      :type :guy}))
 
 (defmulti influence-on-guy
@@ -57,14 +59,14 @@
   (if (or (identical? other self) (<= (other :life) 0))
       (point 0 0)
       (let [delta (point-sub (self :loc) (other :loc))]
-        (point-scale delta (/ (Math/pow (point-mag delta) (+ 1 (self :avoidance))))))))
+        (point-scale delta (/ ((self :geneome) :avoidance) (Math/pow (point-mag delta) 2))))))
 
 (defmethod influence-on-guy :resource
   [other self]
   (if (<= (other :remaining) 0)
       (point 0 0)
       (let [delta (point-sub (other :loc) (self :loc))]
-        (point-scale delta (/ (Math/pow (point-mag delta) (+ 1 (self :unhunger))))))))
+        (point-scale delta (/ ((self :geneome) :unhunger) (Math/pow (point-mag delta) 2))))))
 
 (defn guy-direction
   "Returns the direction a guy would like to move in, given a state."
@@ -84,8 +86,12 @@
   ([sim-width sim-height]
     {:loc (point (* (rand) sim-width) (* (rand) sim-height))
      :remaining (+ 0.5 (rand))
+     :radius 3
      :type :resource}))
 
+(defn colliding?
+  [a b]
+    (<= (point-mag (point-sub a b)) (+ (a :radius) (b :radius))))
 
 (defn simulation
   "Yeah!"
@@ -104,6 +110,10 @@
   "Returns what state becomes after a generation."
   [state]
     (assoc state
+      ; map actions over guys
+      ; map actions over resources
+      ; filter nil out of both lists
+      ; make both lists the same one? :types distinguish.
       :guys (map #(assoc % :loc (point-sum (% :loc) (guy-velocity % state))
                            :life (- (% :life) 0.001)) 
                  (state :guys))))
@@ -113,8 +123,17 @@
   [sim]
   (dosync (alter (sim :state) advanced-state)))
 
-(defn GOGOGO []
-  "do something to see if it blows up"
-  (tick-sim (simulation)))
+(defn sim-frequently-tick
+  "Runs a simulation in a seperate thread."
+  [sim hertz]
+    (.start (Thread. (fn []
+      (while true
+        (Thread/sleep (* 1000 (/ 1 hertz)))
+        (tick-sim sim))))))
 
 
+; DEBUGGING CODE
+(use '[clojure.stacktrace :only (e)])
+(defn GO []
+  (try (tick-sim (simulation))
+       (finally (e))))
