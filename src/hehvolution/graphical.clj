@@ -3,8 +3,9 @@
     (:use hehvolution.graphical-general)
     (:require [hehvolution.core :as core])
     (:import
-      (javax.swing JFrame JPanel)
-      (java.awt Color Graphics2D Dimension)
+      (javax.swing JFrame JPanel KeyStroke AbstractAction)
+      (java.awt Color Graphics2D Dimension Toolkit)
+      (java.awt.event ActionEvent KeyEvent WindowAdapter)
       (java.awt.image BufferedImage)))
 
 (defn guy-fill
@@ -51,6 +52,13 @@
                 (paint-thing thing g vis)))
     image))
 
+(defn visualization-display-close
+  [dis]
+    (.setVisible (dis :win) false)
+    (.dispose (dis :win))
+    ; stop (dis :paint-thread))
+    )
+
 (defn visualization-display
   ([vis hertz]
     (let [window (JFrame.)
@@ -58,18 +66,30 @@
             (paintComponent [g]
               (proxy-super paintComponent g)
               (.drawImage g (visualization-render vis) 0 0 nil)))]
-       (.setPreferredSize
-         panel (apply #(Dimension. %1 %2)(visualization-dimensions vis)))
-       (.add window panel)
-       (.pack window)
-       (.setResizable window false)
-       (.show window)
-       (frequently-repaint panel hertz)
-       window)))
+      (.setPreferredSize
+        panel (apply #(Dimension. %1 %2)(visualization-dimensions vis)))
+      (.add window panel)
+      (.pack window)
+      (.setResizable window false)
+      (.show window)
+      (let
+        [dis {:vis vis
+              :win window
+              :paint-thread (frequently-repaint panel hertz)}
+         cW (KeyStroke/getKeyStroke KeyEvent/VK_W (.getMenuShortcutKeyMask (Toolkit/getDefaultToolkit)))]
+        (.put (.getActionMap panel) "close-window"
+              (proxy [AbstractAction] ["Close Window"]
+                (actionPerformed [e]
+                  (visualization-display-close dis))))
+        (.put (.getInputMap panel JPanel/WHEN_IN_FOCUSED_WINDOW) cW "close-window")
+        (.addWindowListener window (proxy [WindowAdapter] []
+          (windowClosing [e]
+            (visualization-display-close dis)))) ; this going to try to close twice?
+        dis))))
 
 (defn sim-run-and-display
-  ([sim] (sim-run-and-display 30 sim 2.0))
-  ([sim hertz] (sim-run-and-display hertz sim 2.0))
-  ([sim hertz scale]
+  ([sim] (sim-run-and-display 30 sim 2.0 true))
+  ([sim hertz] (sim-run-and-display hertz sim 2.0 true))
+  ([sim hertz scale stop-on-close]
     (visualization-display (visualization sim scale) hertz)
     (core/sim-frequently-tick sim hertz)))

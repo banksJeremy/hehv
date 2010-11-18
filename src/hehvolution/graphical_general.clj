@@ -1,5 +1,6 @@
 (ns hehvolution.graphical-general
     "Graphical code that need not be specific to this application."
+    (:use [hehvolution.core :as core]) ; only general things TODO split into general
     (:import
       (java.awt Color BasicStroke)
       (java.awt.geom
@@ -36,7 +37,7 @@
 (defn frequently-repaint
   "Yeah."
   [thing hertz]
-    (.start (Thread. (fn []
+    (core/thread-running (fn []
       (while true
         (Thread/sleep (* 1000 (/ 1 hertz)))
-        (.repaint thing))))))
+        (.repaint thing)))))

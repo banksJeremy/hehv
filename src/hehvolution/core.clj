@@ -123,13 +123,18 @@
   [sim]
   (dosync (alter (sim :state) advanced-state)))
 
+(defn thread-running [f]
+  (let [thread (Thread. f)]
+    (.start thread)
+    thread))
+
 (defn sim-frequently-tick
   "Runs a simulation in a seperate thread."
   [sim hertz]
-    (.start (Thread. (fn []
+    (thread-running (fn []
       (while true
         (Thread/sleep (* 1000 (/ 1 hertz)))
-        (tick-sim sim))))))
+        (tick-sim sim)))))
 
 
 ; DEBUGGING CODE
