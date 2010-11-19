@@ -1,6 +1,6 @@
 (ns hehvolution.graphical-general
     "Graphical code that need not be specific to this application."
-    (:use [hehvolution.core :as core]) ; only general things TODO split into general
+    (:use hehvolution.general)
     (:import
       (java.awt Color BasicStroke)
       (java.awt.geom
@@ -33,11 +33,3 @@
       (.setPaint g2d border-color)
       (.setStroke g2d (BasicStroke. (* scale border-width)))
       (.draw g2d (apply rect rect-args))))
-
-(defn frequently-repaint
-  "Yeah."
-  [thing hertz]
-    (core/thread-running (fn []
-      (while true
-        (Thread/sleep (* 1000 (/ 1 hertz)))
-        (.repaint thing)))))

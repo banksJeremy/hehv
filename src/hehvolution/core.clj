@@ -1,5 +1,6 @@
 (ns hehvolution.core
-    "Simulation!!!")
+    "Simulation!!!"
+    (:use hehvolution.general))
 
 (def mutation-stdev 0.1)
 
@@ -121,24 +122,12 @@
 (defn tick-sim
   "Tick."
   [sim]
-  (dosync (alter (sim :state) advanced-state)))
-
-(defn thread-running [f]
-  (let [thread (Thread. f)]
-    (.start thread)
-    thread))
+    (dosync (alter (sim :state) advanced-state)))
 
 (defn sim-frequently-tick
   "Runs a simulation in a seperate thread."
-  [sim hertz]
+  [sim hertz alive-ref]
     (thread-running (fn []
-      (while true
+      (while @alive-ref
         (Thread/sleep (* 1000 (/ 1 hertz)))
         (tick-sim sim)))))
-
-
-; DEBUGGING CODE
-(use '[clojure.stacktrace :only (e)])
-(defn GO []
-  (try (tick-sim (simulation))
-       (finally (e))))

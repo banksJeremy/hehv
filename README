@@ -9,8 +9,10 @@ creatures running around an environment, gathering resources, reproducing
 
 Display out the mean/stdev of each gene in the population to show genetic
 diversity. What genes could I have?
-- Fear of other individuals.
-- Attraction of resources.
-- Point at which it likes to reproduce.
+- TODO: Idiomatic agents and such, no manual thread crap.
+- :determination - How much is is attracted to food relative to .5 avoidance
+  of other individuals.
+- :speed, which results in an energy expenditure of :speed squared.
+- :spawn-at-life
   - Based on "health". It splits into two individuals each with half of the
     health and genes that diverge oppositely.

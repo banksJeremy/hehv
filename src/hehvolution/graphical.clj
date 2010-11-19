@@ -1,6 +1,6 @@
 (ns hehvolution.graphical
     "Provides simulation visualizations."
-    (:use hehvolution.graphical-general)
+    (:use hehvolution.general hehvolution.graphical-general)
     (:require [hehvolution.core :as core])
     (:import
       (javax.swing JFrame JPanel KeyStroke AbstractAction)
@@ -56,11 +56,11 @@
   [dis]
     (.setVisible (dis :win) false)
     (.dispose (dis :win))
-    ; stop (dis :paint-thread))
-    )
+    (dosync (alter (dis :alive) (fn [_] false))))
 
 (defn visualization-display
-  ([vis hertz]
+  ([vis nil-on-close] (visualization-display nil))
+  ([vis]
     (let [window (JFrame.)
           panel (proxy [JPanel] []
             (paintComponent [g]
@@ -75,7 +75,8 @@
       (let
         [dis {:vis vis
               :win window
-              :paint-thread (frequently-repaint panel hertz)}
+              :panel panel
+              :alive (ref true)}
          cW (KeyStroke/getKeyStroke KeyEvent/VK_W (.getMenuShortcutKeyMask (Toolkit/getDefaultToolkit)))]
         (.put (.getActionMap panel) "close-window"
               (proxy [AbstractAction] ["Close Window"]
@@ -87,9 +88,27 @@
             (visualization-display-close dis)))) ; this going to try to close twice?
         dis))))
 
+(defn repeatedly-repaint-display
+  ([dis]
+    (repeatedly-repaint-display dis 0.01))
+  ([dis poll-delay]
+    (thread-running (fn f
+      ([]
+        (f nil))
+      ([previous-state]
+        (if @(dis :alive)
+            (let [new-state (@(((dis :vis) :sim) :state))]
+                 (if-not (identical? new-state previous-state)
+                         (.repaint (dis :panel)))
+                 (Thread/sleep poll-delay)
+                 (recur new-state))))))))
+
 (defn sim-run-and-display
-  ([sim] (sim-run-and-display 30 sim 2.0 true))
-  ([sim hertz] (sim-run-and-display hertz sim 2.0 true))
+  ([sim] (sim-run-and-display sim 30 2.0 true))
+  ([sim hertz] (sim-run-and-display sim hertz 2.0 true))
   ([sim hertz scale stop-on-close]
-    (visualization-display (visualization sim scale) hertz)
-    (core/sim-frequently-tick sim hertz)))
+    (let [dis (visualization-display (visualization sim scale))]
+         (core/sim-frequently-tick sim hertz (dis :alive))
+         dis)))
+
+(defn go [] (sim-run-and-display (core/simulation)))
