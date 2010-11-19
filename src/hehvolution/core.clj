@@ -128,6 +128,7 @@
   "Runs a simulation in a seperate thread."
   [sim hertz alive-ref]
     (thread-running (fn []
-      (while @alive-ref
+      (if @alive-ref (do
         (Thread/sleep (* 1000 (/ 1 hertz)))
-        (tick-sim sim)))))
+        (tick-sim sim)
+        (recur))))))

@@ -22,14 +22,14 @@
 (defmulti paint-thing :type)
 
 (defmethod paint-thing :guy
-  [g2d scale guy]
-        (paint-scaled-rect g2d scale (guy-fill guy) (guy-border guy) 1.5
+  [guy g2d vis]
+        (paint-scaled-rect g2d (vis :scale) (guy-fill guy) (guy-border guy) 1.5
                            ((guy :loc) :x) ((guy :loc) :y) (guy :radius) (guy :radius) 1))
 
 (defmethod paint-thing :resource
-  [g2d scale res]
+  [res g2d vis]
     (if (> (res :remaining) 0)
-        (paint-scaled-rect g2d scale Color/green Color/blue 0.5
+        (paint-scaled-rect g2d (vis :scale) Color/green Color/blue 0.5
                            ((res :loc) :x) ((res :loc) :y) (res :radius) (res :radius) 0.5)))
 
 (defn visualization
@@ -54,9 +54,24 @@
 
 (defn visualization-display-close
   [dis]
+    (dosync (alter (dis :alive) (fn [_] false)))
     (.setVisible (dis :win) false)
-    (.dispose (dis :win))
-    (dosync (alter (dis :alive) (fn [_] false))))
+    (.dispose (dis :win)))
+
+(defn repeatedly-repaint-display
+  ([dis]
+    (repeatedly-repaint-display dis 10))
+  ([dis poll-delay]
+    (thread-running (fn f
+      ([]
+        (f nil))
+      ([previous-state]
+        (if @(dis :alive)
+            (let [new-state @(((dis :vis) :sim) :state)]
+                 (if-not (identical? new-state previous-state)
+                         (.repaint (dis :panel)))
+                 (Thread/sleep poll-delay)
+                 (recur new-state))))))))
 
 (defn visualization-display
   ([vis nil-on-close] (visualization-display nil))
@@ -83,30 +98,16 @@
                 (actionPerformed [e]
                   (visualization-display-close dis))))
         (.put (.getInputMap panel JPanel/WHEN_IN_FOCUSED_WINDOW) cW "close-window")
+        (repeatedly-repaint-display dis)
         (.addWindowListener window (proxy [WindowAdapter] []
           (windowClosing [e]
             (visualization-display-close dis)))) ; this going to try to close twice?
         dis))))
 
-(defn repeatedly-repaint-display
-  ([dis]
-    (repeatedly-repaint-display dis 0.01))
-  ([dis poll-delay]
-    (thread-running (fn f
-      ([]
-        (f nil))
-      ([previous-state]
-        (if @(dis :alive)
-            (let [new-state (@(((dis :vis) :sim) :state))]
-                 (if-not (identical? new-state previous-state)
-                         (.repaint (dis :panel)))
-                 (Thread/sleep poll-delay)
-                 (recur new-state))))))))
-
 (defn sim-run-and-display
-  ([sim] (sim-run-and-display sim 30 2.0 true))
-  ([sim hertz] (sim-run-and-display sim hertz 2.0 true))
-  ([sim hertz scale stop-on-close]
+  ([sim] (sim-run-and-display sim 30 2.0))
+  ([sim hertz] (sim-run-and-display sim hertz 2.0))
+  ([sim hertz scale]
     (let [dis (visualization-display (visualization sim scale))]
          (core/sim-frequently-tick sim hertz (dis :alive))
          dis)))

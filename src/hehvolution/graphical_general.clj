@@ -3,6 +3,8 @@
     (:use hehvolution.general)
     (:import
       (java.awt Color BasicStroke)
+      (java.io File)
+      (javax.imageio ImageIO)
       (java.awt.geom
         RoundRectangle2D$Float
         Rectangle2D$Float
@@ -33,3 +35,7 @@
       (.setPaint g2d border-color)
       (.setStroke g2d (BasicStroke. (* scale border-width)))
       (.draw g2d (apply rect rect-args))))
+
+(defn dump-png
+  [img filename]
+    (ImageIO/write img "png" (File. filename)))

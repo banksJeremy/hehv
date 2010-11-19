@@ -6,3 +6,5 @@ lib
 classes
 build
 ./hehvolution
+.DS_Store
+*.png
