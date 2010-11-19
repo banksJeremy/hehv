@@ -112,4 +112,4 @@
          (core/sim-frequently-tick sim hertz (dis :alive))
          dis)))
 
-(defn go [] (sim-run-and-display (core/simulation)) nil)
+(defn go [] (sim-run-and-display (core/simulation)))

@@ -74,7 +74,7 @@
   [self state]
     (point-direction
       (reduce point-sum (point 0 0) 
-              (map #(influence-on-guy % self) (concat (state :guys) (state :resources))))))
+              (map #(influence-on-guy % self) (state :things)))))
 
 (defn guy-velocity
   "Returns the velocity a guy would move at, given a state."
@@ -108,17 +108,21 @@
        :width width
        :height height})))
 
+(defmulti advance-thing (fn [guy state] (:type guy)))
+
+(defmethod advance-thing :guy
+  [guy state]
+    (assoc guy :loc (point-sum (guy :loc) (guy-velocity guy state))
+               :life (- (guy :life) 0.001)))
+
+(defmethod advance-thing :resource
+  [res state]
+    res)
+
 (defn advanced-state
   "Returns what state becomes after a generation."
   [state]
-    (assoc state
-      ; map actions over guys
-      ; map actions over resources
-      ; filter nil out of both lists
-      ; make both lists the same one? :types distinguish.
-      :guys (map #(assoc % :loc (point-sum (% :loc) (guy-velocity % state))
-                           :life (- (% :life) 0.001)) 
-                 (state :guys))))
+    (assoc state :things (map #(advance-thing % state) (state :things))))
 
 (defn tick-sim
   "Tick."
