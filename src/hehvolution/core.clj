@@ -5,8 +5,8 @@
 (def mutation-stdev 0.1)
 
 (def genes [:unhunger :avoidance :life-to-repo])
-(def guy-speed 0.1)
-(def guy-decay-rate 0.01)
+(def guy-speed 0.2)
+(def guy-decay-rate 0.001)
 (def food-regrowth-rate 0.01)
 
 (defn clamp01 [value] (clamp value 0 1))
@@ -127,7 +127,8 @@
         (assoc guy
           :life (/ (guy :life) 2)
           :geneotype (geneotype (guy :geneotype))
-          :loc (num2-scale base-off mul-off)))]
+          :loc (num2-sum (guy :loc) (num2-scale base-off mul-off))
+          :radius (/ (guy :radius) 2)))]
       [ (spawn +1) (spawn -1) ]))
 
 (defmulti advanced-thing
@@ -148,8 +149,7 @@
 
 (defmethod advanced-thing :resource
   [res state]
-    res)
-    ; [(assoc res :remaining (clamp01 (+ (res :remaining) food-regrowth-rate)))])
+    [(assoc res :remaining (clamp01 (+ (res :remaining) food-regrowth-rate)))])
 
 (defn advanced-state
   "Returns what state becomes after a generation."

@@ -9,7 +9,7 @@
 (defn clamp
   [value low high]
     (cond
-      (< low value) low
-      (> high value) high
+      (< value low) low
+      (> value high) high
       :else value))
 
