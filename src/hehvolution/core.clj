@@ -97,7 +97,7 @@
 (defn simulation
   "Yeah!"
   ([]
-    (simulation 10 20 120 120))
+    (simulation 10 20 240 240))
   ([n-guys n-resources width height]
     (let [initial-state {
             :things (concat

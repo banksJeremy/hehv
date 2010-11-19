@@ -19,7 +19,7 @@
   [guy]
     (Color/getHSBColor 0 0 (guy :life)))
 
-(defmulti paint-thing (fn [a &_] (:type a)))
+(defmulti paint-thing (fn [ first & rest] (:type first)))
 
 (defmethod paint-thing :guy
   [guy g2d vis]
