@@ -100,8 +100,9 @@
     (simulation 10 20 120 120))
   ([n-guys n-resources width height]
     (let [initial-state {
-            :guys (for [_ (range n-guys)] (guy width height))
-            :resources (for [_ (range n-resources)] (resource width height))}]
+            :things (concat
+              (for [_ (range n-guys)] (guy width height))
+              (for [_ (range n-resources)] (resource width height)))}]
       {:initial-state initial-state
        :state (ref initial-state)
        :width width

@@ -19,7 +19,7 @@
   [guy]
     (Color/getHSBColor 0 0 (guy :life)))
 
-(defmulti paint-thing :type)
+(defmulti paint-thing (fn [a &_] (:type a)))
 
 (defmethod paint-thing :guy
   [guy g2d vis]
@@ -112,4 +112,4 @@
          (core/sim-frequently-tick sim hertz (dis :alive))
          dis)))
 
-(defn go [] (sim-run-and-display (core/simulation)))
+(defn go [] (sim-run-and-display (core/simulation)) nil)
