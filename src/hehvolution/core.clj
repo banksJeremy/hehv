@@ -6,48 +6,58 @@
 
 (def genes [:unhunger :avoidance :life-to-repo])
 (def guy-speed 0.1)
+(def guy-decay-rate 0.01)
+(def food-regrowth-rate 0.01)
 
-(defn geneome
-  "Generates a geneome, uniformly random or from mutating an existing one."
+(defn clamp01 [value] (clamp value 0 1))
+
+(defn geneotype
+  "Generates a geneotype, uniformly random or from mutating an existing one."
   ([]
     (apply hash-map (flatten (for [gene genes] [gene (rand)]))))
   ([parent]
     parent)) ; TODO
 
-(defn point
+(defn num2
   [x y]
     {:x x :y y})
 
-(defn point-sum
+(defn num2-sum
   [a b]
-    (point (+ (a :x) (b :x)) (+ (a :y) (b :y))))
+    (num2 (+ (a :x) (b :x)) (+ (a :y) (b :y))))
 
-(defn point-sub
+(defn num2-sub
   [a b]
-    (point (- (a :x) (b :x)) (- (a :y) (b :y))))
+    (num2 (- (a :x) (b :x)) (- (a :y) (b :y))))
 
-(defn point-scale
+(defn num2-scale
   [p scale]
-    (point (* scale (p :x)) (* scale (p :y))))
+    (num2 (* scale (p :x)) (* scale (p :y))))
 
-(defn point-mag
+(defn num2-mag
   [p]
     (Math/pow (+ (Math/pow (p :x) 2) (Math/pow (p :y) 2)) 0.5))
 
-(defn point-direction
+(defn num2-direction
   [p]
-    (if (== (point-mag p) 0)
+    (if (= (num2-mag p) 0)
         p
-        (point-scale p (/ 1 (point-mag p)))))
+        (num2-scale p (/ 1 (num2-mag p)))))
+
+(defn num2-at-angle-tau
+  [tau]
+    (num2
+      (Math/cos (* 2 tau))
+      (Math/sin (* 2 tau))))
 
 (defn guy
   "Creates a new guy."
   ([]
     (guy 1.0 1.0))
   ([sim-width sim-height]
-    {:loc (point (* (rand) sim-width) (* (rand) sim-height))
-     :life 1.0
-     :geneome (geneome)
+    {:loc (num2 (* (rand) sim-width) (* (rand) sim-height))
+     :life 0.5
+     :geneotype (geneotype)
      :radius 6
      :type :guy}))
 
@@ -58,41 +68,41 @@
 (defmethod influence-on-guy :guy
   [other self]
   (if (or (identical? other self) (<= (other :life) 0))
-      (point 0 0)
-      (let [delta (point-sub (self :loc) (other :loc))]
-        (point-scale delta (/ ((self :geneome) :avoidance) (Math/pow (point-mag delta) 2))))))
+      (num2 0 0)
+      (let [delta (num2-sub (self :loc) (other :loc))]
+        (num2-scale delta (/ ((self :geneotype) :avoidance) (Math/pow (num2-mag delta) 2))))))
 
 (defmethod influence-on-guy :resource
   [other self]
   (if (<= (other :remaining) 0)
-      (point 0 0)
-      (let [delta (point-sub (other :loc) (self :loc))]
-        (point-scale delta (/ ((self :geneome) :unhunger) (Math/pow (point-mag delta) 2))))))
+      (num2 0 0)
+      (let [delta (num2-sub (other :loc) (self :loc))]
+        (num2-scale delta (/ ((self :geneotype) :unhunger) (Math/pow (num2-mag delta) 2))))))
 
 (defn guy-direction
   "Returns the direction a guy would like to move in, given a state."
   [self state]
-    (point-direction
-      (reduce point-sum (point 0 0) 
+    (num2-direction
+      (reduce num2-sum (num2 0 0) 
               (map #(influence-on-guy % self) (state :things)))))
 
 (defn guy-velocity
   "Returns the velocity a guy would move at, given a state."
   [self state]
-    (point-scale (guy-direction self state) guy-speed))
+    (num2-scale (guy-direction self state) guy-speed))
 
 (defn resource
   ([]
     (resource 1.0 1.0))
   ([sim-width sim-height]
-    {:loc (point (* (rand) sim-width) (* (rand) sim-height))
-     :remaining (+ 0.5 (rand))
+    {:loc (num2 (* (rand) sim-width) (* (rand) sim-height))
+     :remaining 0.5
      :radius 3
      :type :resource}))
 
 (defn colliding?
   [a b]
-    (<= (point-mag (point-sub a b)) (+ (a :radius) (b :radius))))
+    (<= (num2-mag (num2-sub a b)) (+ (a :radius) (b :radius))))
 
 (defn simulation
   "Yeah!"
@@ -108,21 +118,43 @@
        :width width
        :height height})))
 
-(defmulti advance-thing (fn [guy state] (:type guy)))
+(defn guy-spawn
+  "creates two offspring from a guy"
+  [guy]
+    (let
+      [base-off (num2-scale (num2-at-angle-tau (rand)) (/ (guy :radius) 2))
+       spawn (fn [mul-off]
+        (assoc guy
+          :life (/ (guy :life) 2)
+          :geneotype (geneotype (guy :geneotype))
+          :loc (num2-scale base-off mul-off)))]
+      [ (spawn +1) (spawn -1) ]))
 
-(defmethod advance-thing :guy
+(defmulti advanced-thing
+  "Returns a seq of what a thing is after a generation within a given state."
+  (fn [guy state] (:type guy)))
+
+(defmethod advanced-thing :guy
   [guy state]
-    (assoc guy :loc (point-sum (guy :loc) (guy-velocity guy state))
-               :life (- (guy :life) 0.001)))
+    (let [new-guy (assoc guy :loc (num2-sum (guy :loc) (guy-velocity guy state))
+                             :life (clamp01 (- (guy :life) guy-decay-rate)))]
+         (cond
+           (= (new-guy :life) 0)
+            []
+           (<= ((new-guy :geneotype) :life-to-repo) (new-guy :life))
+            (guy-spawn new-guy)
+           :else
+            [new-guy])))
 
-(defmethod advance-thing :resource
+(defmethod advanced-thing :resource
   [res state]
     res)
+    ; [(assoc res :remaining (clamp01 (+ (res :remaining) food-regrowth-rate)))])
 
 (defn advanced-state
   "Returns what state becomes after a generation."
   [state]
-    (assoc state :things (map #(advance-thing % state) (state :things))))
+    (assoc state :things (mapcat #(advanced-thing % state) (state :things))))
 
 (defn tick-sim
   "Tick."
