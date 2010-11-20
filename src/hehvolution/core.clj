@@ -5,6 +5,10 @@
 (def mutation-stdev 0.1)
 
 (def genes [:unhunger :avoidance :life-to-repo])
+
+; later as many of these will be sim-specific as practical
+(def guy-max-radius 9)
+(def res-max-radius 4)
 (def guy-speed 0.2)
 (def guy-decay-rate 0.001)
 (def food-regrowth-rate 0.01)
@@ -58,7 +62,6 @@
     {:loc (num2 (* (rand) sim-width) (* (rand) sim-height))
      :life 0.5
      :geneotype (geneotype)
-     :radius 6
      :type :guy}))
 
 (defmulti influence-on-guy
@@ -72,7 +75,7 @@
       (let [delta (num2-sub (self :loc) (other :loc))]
         (num2-scale delta (/ ((self :geneotype) :avoidance) (Math/pow (num2-mag delta) 2))))))
 
-(defmethod influence-on-guy :resource
+(defmethod influence-on-guy :resources
   [other self]
   (if (<= (other :remaining) 0)
       (num2 0 0)
@@ -91,18 +94,31 @@
   [self state]
     (num2-scale (guy-direction self state) guy-speed))
 
+(defn guy-radius-given-life
+  [life]
+    (* guy-max-radius (sqrt life)))
+
+(defn res-radius-given-remaining
+  [life]
+    (* res-max-radius (sqrt life)))
+
+(defmulti thing-radius :type)
+
+(defmethod thing-radius :guy
+  [guy] (guy-radius-given-life (guy :life)))
+
+(defmethod thing-radius :resources
+  [res] (res-radius-given-remaining (res :remaining)))
+
 (defn resource
   ([]
     (resource 1.0 1.0))
   ([sim-width sim-height]
     {:loc (num2 (* (rand) sim-width) (* (rand) sim-height))
      :remaining 0.5
-     :radius 3
-     :type :resource}))
+     :type :resources}))
 
-(defn colliding?
-  [a b]
-    (<= (num2-mag (num2-sub a b)) (+ (a :radius) (b :radius))))
+(defn thing-outer-distance)
 
 (defn simulation
   "Yeah!"
@@ -122,13 +138,12 @@
   "creates two offspring from a guy"
   [guy]
     (let
-      [base-off (num2-scale (num2-at-angle-tau (rand)) (/ (guy :radius) 2))
+      [base-off (num2-scale (num2-at-angle-tau (rand)) (guy-radius-given-life (/ (guy :life) 2)))
        spawn (fn [mul-off]
         (assoc guy
           :life (/ (guy :life) 2)
           :geneotype (geneotype (guy :geneotype))
-          :loc (num2-sum (guy :loc) (num2-scale base-off mul-off))
-          :radius (/ (guy :radius) 2)))]
+          :loc (num2-sum (guy :loc) (num2-scale base-off mul-off))))]
       [ (spawn +1) (spawn -1) ]))
 
 (defmulti advanced-thing
@@ -147,7 +162,7 @@
            :else
             [new-guy])))
 
-(defmethod advanced-thing :resource
+(defmethod advanced-thing :resources
   [res state]
     [(assoc res :remaining (clamp01 (+ (res :remaining) food-regrowth-rate)))])
 

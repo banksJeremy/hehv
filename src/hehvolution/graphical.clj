@@ -23,14 +23,14 @@
 
 (defmethod paint-thing :guy
   [guy g2d vis]
-        (paint-scaled-rect g2d (vis :scale) (guy-fill guy) (guy-border guy) 1.5
-                           ((guy :loc) :x) ((guy :loc) :y) (guy :radius) (guy :radius) 1))
+        (paint-scaled-rect g2d (vis :scale) (guy-fill guy) (guy-border guy) 0
+                           ((guy :loc) :x) ((guy :loc) :y) (core/thing-radius guy) (core/thing-radius guy) 1))
 
-(defmethod paint-thing :resource
+(defmethod paint-thing :resources
   [res g2d vis]
     (if (> (res :remaining) 0)
-        (paint-scaled-rect g2d (vis :scale) Color/green Color/blue 0.5
-                           ((res :loc) :x) ((res :loc) :y) (res :radius) (res :radius) 0.5)))
+        (paint-scaled-rect g2d (vis :scale) Color/green Color/blue 0
+                           ((res :loc) :x) ((res :loc) :y) (core/thing-radius res) (core/thing-radius res) 0.5)))
 
 (defn visualization
   ([sim] (visualization sim 1.0))

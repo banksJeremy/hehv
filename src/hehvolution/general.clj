@@ -13,3 +13,6 @@
       (> value high) high
       :else value))
 
+(defn sqrt
+  [x]
+    (Math/pow x 0.5))
