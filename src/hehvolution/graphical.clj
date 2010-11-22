@@ -14,9 +14,9 @@
     (apply #(Color. %1 %2 %3) ; can't apply to "Color." =/
            (for [gene core/genes] (Float. ((guy :geneotype) gene)))))
 
-(defmethod thing-fill :resources [res] (Color. 0 255 0 128))
+(defmethod thing-fill :res [res] (Color. 0 255 0 128))
 (defmulti thing-border :type)
-(defmethod thing-border :resources [res] Color/blue)
+(defmethod thing-border :res [res] Color/blue)
 (defmethod thing-border :guy [guy] Color/black)
 
 (defn paint-thing

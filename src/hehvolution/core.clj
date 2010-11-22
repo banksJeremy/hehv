@@ -76,7 +76,7 @@
       (let [delta (num2-sub (self :loc) (other :loc))]
         (num2-scale delta (/ ((self :geneotype) :avoidance) (Math/pow (num2-mag delta) 2))))))
 
-(defmethod influence-on-guy :resources
+(defmethod influence-on-guy :res
   [other self]
   (if (<= (other :life) 0)
       (num2 0 0)
@@ -108,7 +108,7 @@
 (defmethod thing-radius :guy
   [guy] (guy-radius-given-life (guy :life)))
 
-(defmethod thing-radius :resources
+(defmethod thing-radius :res
   [res] (res-radius-given-life (res :life)))
 
 (defn resource
@@ -117,7 +117,7 @@
   ([sim-width sim-height]
     {:loc (num2 (* (rand) sim-width) (* (rand) sim-height))
      :life 0.5
-     :type :resources}))
+     :type :res}))
 
 (defn things-outer-distance
   ([a b]
@@ -131,11 +131,11 @@
   "Yeah!"
   ([]
     (simulation 10 20 240 240))
-  ([n-guys n-resources width height]
+  ([n-guys n-res width height]
     (let [initial-state {
             :things (concat
               (for [_ (range n-guys)] (guy width height))
-              (for [_ (range n-resources)] (resource width height)))}]
+              (for [_ (range n-res)] (resource width height)))}]
       {:initial-state initial-state
        :state (ref initial-state)
        :width width
@@ -173,7 +173,7 @@
            :else
             [new-guy])))
 
-(defmethod advanced-thing :resources
+(defmethod advanced-thing :res
   ([res state]
     (def consumers (filter
       #(and
@@ -183,7 +183,7 @@
     
     (if (seq consumers)
         (do
-          (def life-loss (min (* food-consumption-rate (count consumers)) (res :life)))
+          
           ; grant life
           
           (def advanced (assoc res :life (- (res :life) life-loss)))
@@ -191,6 +191,46 @@
               [advanced]
               nil))
         [(thing-alter-life res food-regrowth-rate)])))
+
+(defn state-consumption
+  ; a map of things to their life changes due to consumption in this tick
+  ([state]
+    (def consumers-by-consumed
+      (loop [consumers {} remaining (filter #(= (% :type) :res) (state :things))]
+        (def current (first remaining))
+        (def others (rest remaining))
+        (if (seq others)
+            (recur (assoc consumers current
+                          (filter #(and (= (% :type :res))
+                                        (things-colliding current %))
+                                  (state :things)))
+                   others)
+            consumers)))
+    
+    (defn consumptions [[consumed consumers]]
+      (if (seq consumers)
+          (let
+            [total-consumed (min (* food-consumption-rate (count consumers)) (consumed :life))
+             each-consumed (/ total-consumed (count consumers))]
+            (concat [{ :thing consumed :delta (- total-consumed) }]
+                    (for [consumer consumers] {:thing consumer :delta each-consumed})))
+          nil))
+    
+    (def consumption-by-consumer
+      (loop [changes {} remaining consumption-by-consumer]
+        (def current (first remaining))
+        (def others (rest remaining))
+        
+        (loop [changes changes remaining (consumptions current)]
+          ; this code is getting horrible. stop that.
+        )
+        
+        
+        )
+      
+      )
+    
+    ))
 
 (defn advanced-state
   "Returns what state becomes after a generation."
