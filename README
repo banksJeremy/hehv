@@ -1,11 +1,9 @@
 Author: Jeremy Banks <jeremy@jeremybanks.ca>
-Source: https://gist.github.com/f7a8cf31da2dc008bae3
+Source: github.com/jeremybanks/hehv
 
-Need something to make in clojure to get a clue how to use it.
+Making a little simulation with evolving creatures while I learn how to use
+Clojure. Proceed with caution.
 
-Hmm. I think I'll do some sort of simulation with evolution. Maybe have little
-creatures running around an environment, gathering resources, reproducing
-(asexually) and maybe fighting. Have a GUI, but work without it.
 
 Display out the mean/stdev of each gene in the population to show genetic
 diversity. What genes could I have?
