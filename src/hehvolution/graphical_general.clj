@@ -19,22 +19,29 @@
   ([x y w h arc-w arc-h] (RoundRectangle2D$Float. x y w h arc-w arc-h)))
 
 (defn circ
-  "Creates an ellipse or circle given [x y] r[x ry].
-  The coordinates corresond to the centre of the shape, not the corner."
+  "Creates an ellipse or circle given [x y] r[x ry]."
   ([r] (circ 0 0 r r))
   ([x y r] (circ x y r r))
   ([x y rx ry] (Ellipse2D$Float. (- x (/ rx 2)) (- y (/ ry 2))
                                  (* rx 2) (* ry 2))))
 
-(defn paint-scaled-rect
-  "Paints a scaled [rounded] rectangle in a graphics context."
-  [g2d scale fill-color border-color border-width & rect-args]
-    (let [rect-args (map #(* scale %) rect-args)]
-      (.setPaint g2d fill-color)
-      (.fill g2d (apply rect rect-args))
-      (.setPaint g2d border-color)
-      (.setStroke g2d (BasicStroke. (* scale border-width)))
-      (.draw g2d (apply rect rect-args))))
+(defn centered-circ
+  "Creates an elpise or circle given a center point instead of a corner one."
+  ([r] (centered-circ 0 0 r r))
+  ([x y r] (centered-circ x y r r))
+  ([x y rx ry] 
+    (let [xp (- x rx) yp (- y ry)]
+         (circ xp yp rx ry))))
+
+(defn paint-scaled
+  "Um."
+  [shape g2d scale fill border b-width & shape-args]
+    (let [shape-args (map #(* scale %) shape-args)]
+      (.setPaint g2d fill)
+      (.fill g2d (apply shape shape-args))
+      (.setPaint g2d border)
+      (.setStroke g2d (BasicStroke. (* scale b-width)))
+      (.draw g2d (apply shape shape-args))))
 
 (defn dump-png
   [img filename]

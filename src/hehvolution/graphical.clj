@@ -8,29 +8,22 @@
       (java.awt.event ActionEvent KeyEvent WindowAdapter)
       (java.awt.image BufferedImage)))
 
-(defn guy-fill
-  "Determines the fill color for a guy, based on his geneotype."
+(defmulti thing-fill :type)
+(defmethod thing-fill :guy
   [guy]
     (apply #(Color. %1 %2 %3) ; can't apply to "Color." =/
            (for [gene core/genes] (Float. ((guy :geneotype) gene)))))
 
-(defn guy-border
-  "Determines the border color for a guy, based on his life."
-  [guy]
-    (Color/getHSBColor 0 0 (guy :life)))
+(defmethod thing-fill :resources [res] (Color. 0 255 0 128))
+(defmulti thing-border :type)
+(defmethod thing-border :resources [res] Color/blue)
+(defmethod thing-border :guy [guy] Color/black)
 
-(defmulti paint-thing (fn [ first & rest] (:type first)))
-
-(defmethod paint-thing :guy
-  [guy g2d vis]
-        (paint-scaled-rect g2d (vis :scale) (guy-fill guy) (guy-border guy) 0
-                           ((guy :loc) :x) ((guy :loc) :y) (core/thing-radius guy) (core/thing-radius guy) 1))
-
-(defmethod paint-thing :resources
-  [res g2d vis]
-    (if (> (res :remaining) 0)
-        (paint-scaled-rect g2d (vis :scale) Color/green Color/blue 0
-                           ((res :loc) :x) ((res :loc) :y) (core/thing-radius res) (core/thing-radius res) 0.5)))
+(defn paint-thing
+  [thing g2d vis]
+        (paint-scaled centered-circ
+          g2d (vis :scale) (thing-fill thing) (thing-border thing) 0
+          ((thing :loc) :x) ((thing :loc) :y) (core/thing-radius thing)))
 
 (defn visualization
   ([sim] (visualization sim 1.0))
@@ -105,8 +98,8 @@
         dis))))
 
 (defn sim-run-and-display
-  ([sim] (sim-run-and-display sim 30 2.0))
-  ([sim hertz] (sim-run-and-display sim hertz 2.0))
+  ([sim] (sim-run-and-display sim 30 3.0))
+  ([sim hertz] (sim-run-and-display sim hertz 3.0))
   ([sim hertz scale]
     (let [dis (visualization-display (visualization sim scale))]
          (core/sim-frequently-tick sim hertz (dis :alive))

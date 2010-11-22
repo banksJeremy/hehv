@@ -10,7 +10,7 @@
 (def guy-max-radius 9)
 (def res-max-radius 4)
 (def guy-speed 0.2)
-(def guy-decay-rate 0.001)
+(def guy-decay-rate 0.0002)
 (def food-regrowth-rate 0.01)
 
 (defn clamp01 [value] (clamp value 0 1))
