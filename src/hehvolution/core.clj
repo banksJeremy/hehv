@@ -12,6 +12,7 @@
 (def guy-speed 0.2)
 (def guy-decay-rate 0.0002)
 (def food-regrowth-rate 0.01)
+(def food-consumption-rate 0.02)
 
 (defn clamp01 [value] (clamp value 0 1))
 
@@ -77,7 +78,7 @@
 
 (defmethod influence-on-guy :resources
   [other self]
-  (if (<= (other :remaining) 0)
+  (if (<= (other :life) 0)
       (num2 0 0)
       (let [delta (num2-sub (other :loc) (self :loc))]
         (num2-scale delta (/ ((self :geneotype) :unhunger) (Math/pow (num2-mag delta) 2))))))
@@ -98,7 +99,7 @@
   [life]
     (* guy-max-radius (sqrt life)))
 
-(defn res-radius-given-remaining
+(defn res-radius-given-life
   [life]
     (* res-max-radius (sqrt life)))
 
@@ -108,17 +109,23 @@
   [guy] (guy-radius-given-life (guy :life)))
 
 (defmethod thing-radius :resources
-  [res] (res-radius-given-remaining (res :remaining)))
+  [res] (res-radius-given-life (res :life)))
 
 (defn resource
   ([]
     (resource 1.0 1.0))
   ([sim-width sim-height]
     {:loc (num2 (* (rand) sim-width) (* (rand) sim-height))
-     :remaining 0.5
+     :life 0.5
      :type :resources}))
 
-(defn thing-outer-distance)
+(defn things-outer-distance
+  ([a b]
+    (- (num2-mag (num2-sub (a :loc) (b :loc))) (thing-radius a) (thing-radius b))))
+
+(defn things-colliding
+  ([a b]
+    (<= (things-outer-distance a b) 0)))
 
 (defn simulation
   "Yeah!"
@@ -146,6 +153,10 @@
           :loc (num2-sum (guy :loc) (num2-scale base-off mul-off))))]
       [ (spawn +1) (spawn -1) ]))
 
+(defn thing-alter-life
+  [thing amount]
+    (assoc thing :life (clamp01 (+ (thing :life) amount))))
+
 (defmulti advanced-thing
   "Returns a seq of what a thing is after a generation within a given state."
   (fn [guy state] (:type guy)))
@@ -163,8 +174,23 @@
             [new-guy])))
 
 (defmethod advanced-thing :resources
-  [res state]
-    [(assoc res :remaining (clamp01 (+ (res :remaining) food-regrowth-rate)))])
+  ([res state]
+    (def consumers (filter
+      #(and
+        (things-colliding res %)
+        (= (% :type) :guy))
+      (state :things)))
+    
+    (if (seq consumers)
+        (do
+          (def life-loss (min (* food-consumption-rate (count consumers)) (res :life)))
+          ; grant life
+          
+          (def advanced (assoc res :life (- (res :life) life-loss)))
+          (if (> (advanced :life) 0)
+              [advanced]
+              nil))
+        [(thing-alter-life res food-regrowth-rate)])))
 
 (defn advanced-state
   "Returns what state becomes after a generation."

@@ -14,5 +14,5 @@ diversity. What genes could I have?
   of other individuals.
 - :speed, which results in an energy expenditure of :speed squared.
 - :spawn-at-life
-  - Based on "health". It splits into two individuals each with half of the
-    health and genes that diverge oppositely.
+  - Based on "life". It splits into two individuals each with half of the
+    life and genes that diverge oppositely.
